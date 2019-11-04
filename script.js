@@ -181,9 +181,6 @@ function processData(input) {
 
 class Campus_Walk {
     constructor(start, finish, vertices, edges) {
-        this.directions = [];
-        this.directions_named = [];
-
         this.places = copy_array_1d(vertices);
         this.edges = copy_array_2d(edges);
 
