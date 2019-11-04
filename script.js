@@ -1,161 +1,202 @@
-const input0 = `10
-nyc
-la
-honolulu
-lisbon
-paris
-madrid
-istanbul
-porto
-london
-barcelona
-10 20
-0 8
-0 6
+const input0 = `Tiernan
+CC
+9
+GITC
+Library
+Cullimore
+Tiernan
+CKB
+FMH
+CC
+Fenster
+Campbell
+9 22
+0 2
 0 4
-0 1
-1 8
 1 3
-1 2
-2 3
-2 6
-3 7
-3 9
-4 9
-4 2
-4 1
-5 7
-8 9
-8 3
-8 5
-9 6
-9 5`;
-
-let input1 = `1
-dublin
-1 0`;
-
-let input2 = `2
-edinburgh
-dublin
-2 1
-0 1`;
-
-let input3 = `2
-edinburgh
-dublin
-2 0`;
-
-let input4 = `10
-nyc
-la
-honolulu
-lisbon
-paris
-madrid
-istanbul
-porto
-london
-barcelona
-10 22
-0 8
-7 6
+1 4
+2 0
 2 8
-0 6
-0 4
-0 1
-1 8
-1 3
-1 2
-2 3
-2 6
-3 7
-3 9
-4 9
-4 2
-4 1
-5 7
-8 9
-8 3
-8 5
-9 6
-9 5`;
-
-let input5 = `10
-nyc
-la
-honolulu
-lisbon
-paris
-madrid
-istanbul
-porto
-london
-barcelona
-10 20
-0 8
-0 6
-0 4
-0 1
-1 8
-1 3
-1 2
-2 3
-2 6
-3 7
-3 9
-4 9
-4 2
-4 1
-5 7
-8 9
-8 3
-8 5
-9 6
-9 5`;
-
-let input6 = `8
-minsk0
-brest1
-vitebsk2
-slutsk3
-gomel4
-la5
-ny6
-pa7
-8 8
-0 1
-1 2
-1 3
-1 5
-2 4
 3 4
-3 7
-5 6
-`;
+3 1
+3 8
+3 5
+4 3
+4 1
+4 0
+5 8
+5 3
+6 7
+7 6
+7 8
+8 5
+8 3
+8 2
+8 7`;
 
+let input1 = `Cullimore
+Tiernan
+8
+GITC
+Library
+Cullimore
+Tiernan
+CKB
+FMH
+CC
+Fenster
+8 16
+0 2
+1 3
+2 0
+2 5
+3 1
+3 5
+3 4
+4 5
+4 3
+6 7
+7 6
+7 5
+5 4
+5 3
+5 2
+5 7`;
+
+let input2 = `CC
+Fenster
+9
+GITC
+Library
+Cullimore
+Tiernan
+CKB
+FMH
+CC
+Fenster
+Campbell
+9 22
+0 2
+0 4
+1 3
+1 4
+2 0
+2 8
+3 4
+3 1
+3 8
+3 5
+4 3
+4 1
+4 0
+5 8
+5 3
+6 7
+7 6
+7 8
+8 5
+8 3
+8 2
+8 7`;
+
+let input3 = `GITC
+FMH
+8
+GITC
+Library
+Cullimore
+Tiernan
+CKB
+FMH
+CC
+Fenster
+8 9
+0 1
+0 2
+2 3
+3 4
+4 1
+1 5
+1 6
+6 7
+7 5`;
+
+let input4 = `1
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9 24
+0 2
+1 2
+1 3
+1 4
+1 5
+2 0
+2 1
+2 3
+3 1
+3 2
+3 6
+3 7
+4 1
+4 5
+4 8
+5 1
+5 4
+6 3
+6 7
+7 3
+7 6
+7 8
+8 4
+8 7`;
 
 function processData(input) {
     var data = input.split("\n");
+
+    var start = data[0];
+    var finish = data[1];
+
+    data = data.slice(2);
+
     var vertices_count = Number(data[0]) + 1;
     var edges_count = Number(data[vertices_count].split(" ")[1]);
     var edges_index = vertices_count + 1;
     var vertices = data.slice(1, vertices_count);
     var edges = data.slice(edges_index, edges_index + edges_count).map(x => x.split(" ").map(y => Number(y)));
 
-    var trip = new Euro_ishTrip(vertices, edges);
+    var walk = new Campus_Walk(start, finish, vertices, edges);
+
+    console.log(walk.max_length);
 }
 
 
-class Euro_ishTrip {
-    constructor(vertices, edges) {
+class Campus_Walk {
+    constructor(start, finish, vertices, edges) {
         this.directions = [];
         this.directions_named = [];
 
-        this.cities = copy_array_1d(vertices);
+        this.places = copy_array_1d(vertices);
         this.edges = copy_array_2d(edges);
 
-        this.graph = this.cities.map(function(element, i) {
+        this.start = start;
+        this.start_index = this.places.indexOf(start);
+        this.finish = finish;
+        this.finish_index = this.places.indexOf(finish);
+
+        this.max_length = 0;
+
+        this.places_count = this.places.length;
+
+        this.campus = this.places.map(function(element, i) {
             element = [];
 
             this.edges.forEach(function(edge) {
@@ -167,80 +208,41 @@ class Euro_ishTrip {
             return element;
         }.bind(this));
 
-        this.get_routes();
+        this.longest_path();
     }
 
-    topological_sort_util(explored, indegree, route, directions) {
-        var finished = false;
+    find_path(place_index, max_length, current_length, visited) {
+        visited.push(place_index);
 
-        this.graph.forEach(function(node, i) {
-            if (!explored[i] && indegree[i] == 0) {
-                explored[i] = true;
-                route.push(i);
-                node.forEach(function(edge) {
-                    indegree[edge]--;
-                });
+        if (place_index == this.finish_index) {
+            visited.splice(visited.indexOf(place_index), 1);
 
-                this.topological_sort_util(explored, indegree, route, directions);
+            if (current_length > this.max_length) {
+                this.max_length = current_length;
+            }
 
-                explored[i] = false;
-                route.pop();
-                node.forEach(function(edge) {
-                    indegree[edge]++;
-                });
+            current_length--;
+            return;
+        }
 
-                finished = true;
+        current_length++;
+
+        this.campus[place_index].forEach(function(place_index, i) {
+            if (visited.indexOf(place_index) == -1) {
+                this.find_path(place_index, max_length, current_length, visited);
             }
         }.bind(this));
 
-        if (!finished) {
-            directions.push(copy_array_1d(route));
-        }
+        visited.splice(visited.indexOf(place_index), 1);
+        current_length--;
     }
 
+    longest_path() {
+        var visited = [];
 
-    topological_sort() {
-        var explored = this.cities.map(x => false);
-        var indegree = this.cities.map(x => 0);
-        var pre_route = [];
-
-        this.graph.forEach(function(graph) {
-            graph.forEach(function(element) {
-                indegree[element]++;
-            })
-        });
-
-        this.topological_sort_util(explored, indegree, pre_route, this.directions);
-    }
-
-    print_directions() {
-        this.directions.forEach(function(direction) {
-            var result_string = "";
-
-            direction.forEach(function(city, i) {
-                if (i != direction.length - 1) {
-                    result_string += this.cities[city] + ", ";
-                } else {
-                    result_string += this.cities[city];
-                }
-            }.bind(this));
-
-            this.directions_named.push(result_string);
-        }.bind(this));
-
-        this.directions_named.sort();
-        this.directions_named.forEach(function(direction) {
-            console.log(direction);
-        });
-    }
-
-    get_routes() {
-        this.topological_sort();
-        this.print_directions();
+        this.find_path(this.start_index, this.max_length, 0, visited);
     }
 }
-
-
 
 function copy_array_1d(arr1) {
     return arr1.slice();
@@ -250,4 +252,4 @@ function copy_array_2d(arr1) {
     return arr1.map(x => x.slice()).slice();
 }
 
-processData(input3);
+processData(input2);
